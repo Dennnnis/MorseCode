@@ -1,87 +1,50 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
+using System.Linq;
 
 namespace MorseCode
 {
     public partial class Form1 : Form
     {
-        public class Pair
-        {
-            public string morse;
-            public string text;
-        }
-        List<Pair> morse = new List<Pair>();
+        Dictionary<string, string> ToText = new Dictionary<string, string>();
+        Dictionary<char, string> ToMorse = new Dictionary<char, string>();
 
         public Form1()
         {
             string[] lines = File.ReadAllLines("Translation.txt");
             foreach (string line in lines)
             {
-                morse.Add(new Pair() { morse = line.Split(' ')[0], text = line.Split(' ')[1]}) ;
+                string[] parts = line.Split('>');
+                ToMorse.Add(parts[1][0], parts[0]);
+                ToText.Add(parts[0], parts[1]);
             }
+
+            ToMorse.Add('\n',$"{Environment.NewLine}");
+            ToMorse.Add('\r', "");
+            ToText.Add("~", Environment.NewLine);
+            ToText.Add("","");
 
             InitializeComponent();
         }
 
-        //Text input/output
-        private void textBox1_TextChanged(object sender, EventArgs e)
+        private void textBox1_TextChanged(object sender, EventArgs e) //Text input/output
         {
-            if (!textBox1.Focused) { return; }
-            string final = "";
-            string buffer = "";
-            foreach (char c in textBox1.Text)
-            {
-                if (c == ' ') { final += "/ ";  buffer = ""; continue; };
-                buffer += c.ToString().ToUpper();
-
-                foreach (Pair p in morse)
-                {
-                    if (p.text == buffer)
-                    {
-                        final += $"{p.morse} ";
-                        buffer = "";
-                        break;
-                    }                
-                }
-            }
-            textBox2.Text = final;
+            if (!textBox1.Focused) return;
+            string buffer = string.Empty;
+            foreach (char c in textBox1.Text.ToUpper())
+                buffer += (ToMorse.ContainsKey(c) ? ToMorse[c] : "?") + (c != '\n' && c != '\r'? " " : "");
+            textBox2.Text = buffer.Trim(' ');
         }
 
-        //Morse code input/output
-        private void textBox2_TextChanged(object sender, EventArgs e)
+        private void textBox2_TextChanged(object sender, EventArgs e) //Morse code input/output
         {
-            if (!textBox2.Focused) { return; }
-            string debug = "";
-            string final = "";
-            string buffer = "";
-            foreach (char c in textBox2.Text + " ")
-            {
-                debug += c;
-                if (c == '/') { final += ' ';  }
-                if (c == ' ')
-                {
-                    foreach (Pair p in morse)
-                    {
-                        if (p.morse == buffer)
-                        {
-                            debug += p.text;
-                            final += p.text;
-                        }
-                    }
-                    buffer = "";
-                    continue;
-                };
-                buffer += c.ToString().ToUpper();
-            }
-            textBox1.Text = final;
+            if (!textBox2.Focused) return;
+            string buffer = string.Empty;
+            foreach (string m in textBox2.Text.Replace($"{Environment.NewLine}"," ~ ").Split(' '))
+                buffer += ToText.ContainsKey(m) ? ToText[m] : "?";
+            textBox1.Text = buffer;
         }
     }
 }
